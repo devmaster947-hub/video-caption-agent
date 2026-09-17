@@ -1,0 +1,4 @@
+interface:
+  display_name: "Video Caption Agent"
+  short_description: "Transcribe, repair, translate, voice, and burn video subtitles"
+  default_prompt: "Use $video-caption-agent to repair any bad burned-in captions, optionally replace narration, and add clean synchronized subtitles to this video."
