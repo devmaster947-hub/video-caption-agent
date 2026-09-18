@@ -1,4 +1,4 @@
 interface:
-  display_name: "Video Caption Agent"
-  short_description: "Transcribe, repair, translate, voice, and burn video subtitles"
-  default_prompt: "Use $video-caption-agent to repair any bad burned-in captions, optionally replace narration, and add clean synchronized subtitles to this video."
+  display_name: "视频字幕助手"
+  short_description: "按指定质量去除或生成视频硬字幕"
+  default_prompt: "使用 $video-caption-agent 按我要求的质量去除或添加这段视频的字幕。"

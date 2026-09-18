@@ -71,9 +71,36 @@ def main() -> None:
     parser.add_argument("--light-min", type=int, default=175)
     parser.add_argument("--dark-max", type=int, default=72)
     parser.add_argument("--saturation-max", type=int, default=80)
-    parser.add_argument("--radius", type=float, default=4.0)
+    parser.add_argument(
+        "--radius",
+        type=float,
+        help="Inpaint radius; defaults to 3/4/5 for fast/standard/high",
+    )
+    parser.add_argument(
+        "--quality",
+        choices=("fast", "standard", "high"),
+        default="standard",
+        help="Processing/output profile; high remains frame-local in this helper",
+    )
     parser.add_argument("--preview-dir", type=Path)
     args = parser.parse_args()
+
+    profiles = {
+        "fast": {
+            "preset": "veryfast", "crf": "23", "method": cv2.INPAINT_TELEA,
+            "radius": 3.0, "samples": (0.1, 0.5, 0.9),
+        },
+        "standard": {
+            "preset": "medium", "crf": "18", "method": cv2.INPAINT_TELEA,
+            "radius": 4.0, "samples": (0.1, 0.3, 0.5, 0.7, 0.9),
+        },
+        "high": {
+            "preset": "slow", "crf": "16", "method": cv2.INPAINT_NS,
+            "radius": 5.0, "samples": (0.05, 0.15, 0.25, 0.35, 0.45, 0.55, 0.65, 0.75, 0.85, 0.95),
+        },
+    }
+    profile = profiles[args.quality]
+    inpaint_radius = args.radius if args.radius is not None else profile["radius"]
 
     capture = cv2.VideoCapture(str(args.input))
     if not capture.isOpened():
@@ -89,14 +116,14 @@ def main() -> None:
     args.output.parent.mkdir(parents=True, exist_ok=True)
     if args.preview_dir:
         args.preview_dir.mkdir(parents=True, exist_ok=True)
-    sample_frames = {int(frame_count * ratio) for ratio in (0.1, 0.5, 0.9)}
+    sample_frames = {int(frame_count * ratio) for ratio in profile["samples"]}
 
     command = [
         "ffmpeg", "-y", "-loglevel", "error",
         "-f", "rawvideo", "-pix_fmt", "bgr24",
         "-s", f"{width}x{height}", "-r", f"{fps:.8f}", "-i", "-",
         "-i", str(args.input), "-map", "0:v:0", "-map", "1:a?",
-        "-c:v", "libx264", "-preset", "medium", "-crf", "18",
+        "-c:v", "libx264", "-preset", profile["preset"], "-crf", profile["crf"],
         "-pix_fmt", "yuv420p", "-c:a", "copy", "-shortest", str(args.output),
     ]
     encoder = subprocess.Popen(command, stdin=subprocess.PIPE)
@@ -109,7 +136,7 @@ def main() -> None:
         mask = build_mask(
             frame, args.roi, args.polarity, args.light_min, args.dark_max, args.saturation_max
         )
-        cleaned = cv2.inpaint(frame, mask, args.radius, cv2.INPAINT_TELEA)
+        cleaned = cv2.inpaint(frame, mask, inpaint_radius, profile["method"])
         if args.preview_dir and index in sample_frames:
             cv2.imwrite(str(args.preview_dir / f"frame_{index:06d}_mask.png"), mask)
             cv2.imwrite(str(args.preview_dir / f"frame_{index:06d}_cleaned.png"), cleaned)

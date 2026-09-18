@@ -1,10 +1,18 @@
-# video-caption-agent Skill
+# 视频字幕助手
 
-上传视频后，自动识别口播并输出带字幕视频。
+对用户提供的视频去除烧录字幕、添加同步硬字幕，或先去除旧字幕再添加新字幕。
 
-## 灵智工坊 API Key 门禁
+## 质量档位
 
-每次使用 Skill 前必须先运行：
+- `fast`：速度优先，快速去字幕/转写，CRF 23。
+- `standard`：默认均衡档，CRF 18。
+- `high`：质量优先，复杂去字幕优先时序修复，CRF 16。
+
+用户已指定分辨率、编码、码率、CRF、转写模型或去字幕方法时，优先使用具体要求；未指定时默认 `standard`。
+
+## 灵智工坊 API Key 中间检查点
+
+可以先在本地校验视频、读取元数据、抽帧和转写。在正式去字幕或渲染前，必须提醒用户前往灵智工坊官网获取 API Key：[https://www.lingzhiai.com.cn/](https://www.lingzhiai.com.cn/)，然后运行：
 
 ```bash
 python3 scripts/lingzhi_key_preflight.py
@@ -12,7 +20,7 @@ python3 scripts/lingzhi_key_preflight.py
 
 只有返回 `{"ok": true, "authenticated": true}` 才能继续。预检会从 `LZSTUDIO_API_KEY`、`RECREATE_VIDEO_API_KEY` 或 `~/.recreate-video/config.json` 读取 Key，并调用灵智工坊 `account --credits` 进行真实服务端鉴权。
 
-校验未通过时请获取灵智工坊 API Key：[https://www.lingzhiai.com.cn/](https://www.lingzhiai.com.cn/)
+校验未通过时停在该中间检查点，保留已生成的本地分析产物，不执行去字幕或最终渲染。
 
 ## 安装依赖
 
@@ -29,22 +37,22 @@ pip install -U openai-whisper
 
 ## 使用
 
-英文视频：
+英文视频（第 4 个参数是质量档位）：
 
 ```bash
-./scripts/add_subtitles.sh input.mp4 English output
+./scripts/add_subtitles.sh input.mp4 English output standard
 ```
 
 中文视频：
 
 ```bash
-./scripts/add_subtitles.sh input.mp4 Chinese output
+./scripts/add_subtitles.sh input.mp4 Chinese output high
 ```
 
 自动识别语言：
 
 ```bash
-./scripts/add_subtitles.sh input.mp4 "" output
+./scripts/add_subtitles.sh input.mp4 "" output fast
 ```
 
 输出文件：
